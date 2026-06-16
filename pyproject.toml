@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hyper-agent-sdk"
+version = "0.1.0"
+description = "Hyper-Agent 多智能体AI框架 - 开源插件SDK"
+authors = [{name = "Hyper-Agent Team"}]
+requires-python = ">=3.10"
+license = {text = "MIT"}
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
+dependencies = [
+    "pyyaml>=6.0",
+    "aiohttp>=3.9",
+]
+
+[project.optional-dependencies]
+chromadb = ["chromadb>=0.4"]
+openai = ["openai>=1.0"]
+all = [
+    "chromadb>=0.4",
+    "openai>=1.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/hyper-agent/sdk"
+Documentation = "https://github.com/hyper-agent/sdk/docs"
+Repository = "https://github.com/hyper-agent/sdk"
+
+[tool.setuptools.packages.find]
+where = ["src"]

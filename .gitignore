@@ -1,0 +1,35 @@
+# Bytecode
+__pycache__/
+*.py[cod]
+*.so
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+htmlcov/
+.coverage
+.pytest_cache/
+
+# Logs
+*.log
+
+# ChromaDB data
+chroma_data/

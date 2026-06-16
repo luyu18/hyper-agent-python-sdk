@@ -1,0 +1,137 @@
+"""
+GLM 模型适配器
+==============
+接入智谱AI GLM系列模型（glm-flash等）。
+使用 OpenAI 兼容接口。
+"""
+from __future__ import annotations
+
+import logging
+import os
+import time
+from typing import Any, Dict, List, Optional
+
+import aiohttp
+
+from hyper_agent_sdk.adapters.base import ModelAdapter, ModelResponse
+from hyper_agent_sdk.types import ModelConfig, ToolDefinition
+
+logger = logging.getLogger("hyper_agent.adapter.glm")
+
+GLM_API_BASE = "https://open.bigmodel.cn/api/paas/v4"
+
+
+class GLMAdapter(ModelAdapter):
+    """
+    GLM模型适配器（智谱AI）
+    
+    支持的模型:
+    - glm-4-flash (轻量快速)
+    - glm-4-plus (增强版)
+    - glm-4-air (极速版)
+    
+    环境变量:
+    - GLM_API_KEY: API密钥
+    
+    配置示例:
+        config = ModelConfig(
+            name="glm-4-flash",
+            provider="glm",
+            api_key_env="GLM_API_KEY",
+            max_tokens=2048,
+            temperature=0.7,
+        )
+        adapter = GLMAdapter(config)
+    """
+    
+    def __init__(self, config: ModelConfig):
+        super().__init__(config)
+        self._api_key = os.environ.get(config.api_key_env, "")
+        self._api_base = config.api_base or GLM_API_BASE
+        
+        if not self._api_key:
+            logger.warning(
+                "GLM_API_KEY not set. Set env var %s.",
+                config.api_key_env
+            )
+    
+    async def chat(
+        self,
+        messages: List[Dict[str, str]],
+        tools: Optional[List[ToolDefinition]] = None,
+        **kwargs,
+    ) -> ModelResponse:
+        start = time.time()
+        
+        headers = {
+            "Authorization": f"Bearer {self._api_key}",
+            "Content-Type": "application/json",
+        }
+        
+        payload = {
+            "model": self.config.name,
+            "messages": messages,
+            "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
+            "temperature": kwargs.get("temperature", self.config.temperature),
+            "top_p": kwargs.get("top_p", self.config.top_p),
+            "stream": False,
+        }
+        
+        if tools:
+            payload["tools"] = [t.to_openai_format() for t in tools]
+        
+        extra = self.config.extra_params
+        if extra:
+            payload.update(extra)
+        
+        self._total_calls += 1
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self._api_base}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=120),
+                ) as resp:
+                    if resp.status != 200:
+                        error_text = await resp.text()
+                        self._total_errors += 1
+                        logger.error("GLM API error %d: %s", resp.status, error_text)
+                        return ModelResponse(
+                            content="",
+                            model=self.config.name,
+                            finish_reason="error",
+                            elapsed_ms=(time.time() - start) * 1000,
+                        )
+                    
+                    data = await resp.json()
+        except Exception as e:
+            self._total_errors += 1
+            logger.error("GLM API call failed: %s", e)
+            return ModelResponse(
+                content="",
+                model=self.config.name,
+                finish_reason="error",
+                elapsed_ms=(time.time() - start) * 1000,
+            )
+        
+        choice = data.get("choices", [{}])[0]
+        message = choice.get("message", {})
+        usage = data.get("usage", {})
+        
+        content = message.get("content", "") or ""
+        
+        tokens_total = usage.get("total_tokens", 0)
+        self._total_tokens += tokens_total
+        
+        return ModelResponse(
+            content=content,
+            model=self.config.name,
+            tokens_prompt=usage.get("prompt_tokens", 0),
+            tokens_completion=usage.get("completion_tokens", 0),
+            total_tokens=tokens_total,
+            finish_reason=choice.get("finish_reason", "stop"),
+            elapsed_ms=(time.time() - start) * 1000,
+            raw_response=data,
+        )
