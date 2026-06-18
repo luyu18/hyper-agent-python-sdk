@@ -31,5 +31,8 @@ htmlcov/
 # Logs
 *.log
 
+# Stray git artifacts
+git
+
 # ChromaDB data
 chroma_data/

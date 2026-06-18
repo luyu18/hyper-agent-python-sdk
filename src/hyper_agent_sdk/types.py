@@ -5,9 +5,10 @@ Hyper-Agent SDK 类型定义
 """
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 
 class TaskStatus(Enum):
@@ -142,4 +143,91 @@ class PluginManifest:
             "capabilities": self.capabilities,
             "dependencies": self.dependencies,
             "min_sdk_version": self.min_sdk_version,
+        }
+
+
+# ══════════════════════════════════════════════════════════════════════
+# 权限令牌体系 (Capability Token) — v0.2 新增
+# ══════════════════════════════════════════════════════════════════════
+
+class TokenScope(Enum):
+    """Token 作用域"""
+    KERNEL = "kernel"           # 内核级（仅框架自身）
+    PLUGIN = "plugin"           # 插件级（沙箱隔离）
+    DELEGATED = "delegated"     # 委派级（临时权限）
+
+
+@dataclass
+class CapabilityToken:
+    """
+    能力令牌 — 内核调用 open_session 下发给插件的授权凭证
+
+    插件不需要自己创建令牌，内核会在插件初始化时自动下发。
+    插件只需要在调用 API 时将令牌传入即可。
+    """
+    token_id: str = ""
+    owner_id: str = ""               # 持有者标识（插件ID）
+    scope: TokenScope = TokenScope.PLUGIN
+    allowed_apis: Set[str] = field(default_factory=set)
+    denied_apis: Set[str] = field(default_factory=set)
+    max_memory_mb: int = 512
+    max_cpu_percent: int = 50
+    allow_network: bool = True
+    allow_file_write: bool = False
+    created_at: float = field(default_factory=time.time)
+    expires_at: Optional[float] = None
+    delegated_by: Optional[str] = None   # 委派来源
+    audit_enabled: bool = True
+
+    def is_expired(self) -> bool:
+        if self.expires_at is None:
+            return False
+        return time.time() > self.expires_at
+
+    def can_access(self, api_name: str) -> bool:
+        """检查是否可以访问指定 API"""
+        if api_name in self.denied_apis:
+            return False
+        if api_name in self.allowed_apis:
+            return True
+        return False
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "token_id": self.token_id,
+            "owner_id": self.owner_id,
+            "scope": self.scope.value,
+            "allowed_apis": list(self.allowed_apis),
+            "denied_apis": list(self.denied_apis),
+            "expires_at": self.expires_at,
+            "delegated_by": self.delegated_by,
+        }
+
+
+class PublicCapabilities:
+    """插件可申请调用的公开 API 列表（v0.2 与内核对齐）"""
+    PLUGIN_REGISTER = "plugin.register"
+    TASK_SUBMIT = "task.submit"
+    MEMORY_ADD = "memory.add_message"
+    MEMORY_SEARCH = "memory.search"
+    MODEL_INVOKE = "model.invoke"
+    EVENT_SUBSCRIBE = "event.subscribe"
+    TOOL_EXECUTE = "tool.execute"
+
+    ALL: Set[str] = {
+        PLUGIN_REGISTER, TASK_SUBMIT, MEMORY_ADD,
+        MEMORY_SEARCH, MODEL_INVOKE, EVENT_SUBSCRIBE, TOOL_EXECUTE,
+    }
+
+    @classmethod
+    def descriptions(cls) -> Dict[str, str]:
+        """返回每个 API 的中文说明"""
+        return {
+            cls.PLUGIN_REGISTER: "注册插件到智能体集群",
+            cls.TASK_SUBMIT: "提交任务到智能体集群",
+            cls.MEMORY_ADD: "写入记忆到三层记忆系统",
+            cls.MEMORY_SEARCH: "搜索历史摘要记忆",
+            cls.MODEL_INVOKE: "调用指定大模型",
+            cls.EVENT_SUBSCRIBE: "订阅系统事件",
+            cls.TOOL_EXECUTE: "执行工具调用",
         }

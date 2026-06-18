@@ -6,7 +6,7 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://python.org)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.1.0-orange)](https://github.com/hyper-agent/sdk/releases)
+[![Version](https://img.shields.io/badge/version-0.2.0-orange)](https://github.com/hyper-agent/sdk/releases)
 
 </div>
 
@@ -141,24 +141,26 @@ hyper-agent-sdk/
 
 | API | 说明 | 权限 |
 |-----|------|------|
+| `plugin.register` | 注册插件到智能体集群 | ✅ ALLOW |
 | `task.submit` | 提交任务到智能体集群 | ✅ ALLOW |
+| `memory.add_message` | 写入消息到三层记忆 | ✅ ALLOW |
 | `memory.search` | 搜索历史摘要记忆 | ✅ ALLOW |
-| `memory.add_message` | 写入记忆 | ✅ ALLOW |
-| `model.invoke` | 调用指定模型 | ✅ ALLOW |
-| `config.get` | 读取公开配置 | ✅ ALLOW |
+| `model.invoke` | 调用指定大模型 | ✅ ALLOW |
 | `event.subscribe` | 订阅系统事件 | ✅ ALLOW |
+| `tool.execute` | 执行工具调用 | ✅ ALLOW |
 
 ### 内核 API（插件不可访问）
 
 | API | 说明 |
 |-----|------|
-| `scheduler.reroute` | 修改调度规则 |
-| `auth.bypass` | 绕过权限检查 |
-| `config.set_core` | 修改核心配置 |
-| `memory.raw_access` | 直接访问原始日志 |
-| `compressor.override` | 覆写压缩行为 |
+| `scheduler.modify_pool` | 修改调度池配置 |
+| `scheduler.change_priority` | 修改任务优先级策略 |
+| `memory.modify_compressor` | 覆写压缩模型/逻辑 |
+| `event_bus.internal` | 内部事件总线直连 |
+| `config.modify_kernel` | 修改内核级配置 |
+| `auth.grant_kernel` | 授予内核级权限 |
 
-> **安全声明**: 以上内核 API 仅在内核内部使用，SDK 无任何接口暴露这些能力。
+> **安全声明**: 以上内核 API 通过 `CapabilityGuard` 硬隔离，SDK 无法绕过令牌体系访问。
 
 ---
 

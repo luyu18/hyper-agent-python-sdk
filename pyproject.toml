@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hyper-agent-sdk"
-version = "0.1.0"
+version = "0.2.0"
 description = "Hyper-Agent 多智能体AI框架 - 开源插件SDK"
 authors = [{name = "Hyper-Agent Team"}]
 requires-python = ">=3.10"
@@ -41,9 +41,9 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/hyper-agent/sdk"
-Documentation = "https://github.com/hyper-agent/sdk/docs"
-Repository = "https://github.com/hyper-agent/sdk"
+Homepage = "https://github.com/luyu18/hyper-agent-python-sdk"
+Documentation = "https://github.com/luyu18/hyper-agent-python-sdk/blob/main/docs"
+Repository = "https://github.com/luyu18/hyper-agent-python-sdk"
 
 [tool.setuptools.packages.find]
 where = ["src"]
